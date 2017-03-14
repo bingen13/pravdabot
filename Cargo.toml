@@ -1,0 +1,6 @@
+[package]
+name = "pravdabot"
+version = "0.0.4"
+authors = ["modulus@spiritofcontradiction.eu"]
+[dependencies]
+irc = "*"
