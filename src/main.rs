@@ -27,7 +27,32 @@ pub fn process_cmd(msg: Message, tx: &Sender<GameEvent>) {
         _ => (),
     }
     match msg.command {
-        Command::PRIVMSG(ref s1, ref s2) => println!("to {} containing {}", s1, s2),
+        Command::PRIVMSG(ref s1, ref s2) => {
+            let nick = msg.source_nickname().unwrap();
+            println!("to {} containing {}", s1, s2);
+            let cmd = s2.trim();
+            if cmd.starts_with('!') {
+                // We're getting a command.
+                let cmd_words = cmd.split_whitespace().collect::<Vec<_>>();
+                match cmd_words[0].to_lowercase().as_str() {
+                    "!join" => {
+                        if s1.starts_with("#") {
+                            tx.send(GameEvent::Join(nick.to_string())).unwrap();
+                        } else {
+                            tx.send(GameEvent::Notice(nick.to_string(),
+                                                      "This command must be issued in public."
+                                                          .to_string()))
+                              .unwrap();
+                        }
+                    }
+                    _ => println!("Unimplemented command: {}", cmd_words[0]),
+                }
+            }
+        }
+        Command::NICK(_) | Command::QUIT(_) | Command::PART(_, _) => {
+            let nick = msg.source_nickname().unwrap();
+            tx.send(GameEvent::Leave(nick.to_string())).unwrap();
+        }
         _ => print!("{}", msg.to_string()),
     }
     let mstr = msg.to_string();
@@ -40,17 +65,36 @@ pub fn process_cmd(msg: Message, tx: &Sender<GameEvent>) {
     }
 }
 
+/// Deliver takes a GameReaction and delivers all its mesages out.
+fn deliver(gr: &GameReaction, tx: &Sender<GameEvent>) {
+    for i in gr.msg.iter() {
+        match i.recipients {
+            Recipients::Channel(ref s) => {
+                tx.send(GameEvent::Notice(s.clone(), i.content.clone())).unwrap();
+            }
+            Recipients::Nicks(ref v) => {
+                for j in v.iter() {
+                    tx.send(GameEvent::Notice(j.clone(), i.content.clone())).unwrap();
+                }
+            }
+        }
+    }
+}
+
+
 fn main() {
 
     println!("Welcome to CCCP. Building datastructures...");
     let my_server = IrcServer::new("pravda.json").unwrap();
     let s = my_server.clone();
     let my_chan = &my_server.config().clone().channels.unwrap()[0];
+    let mut my_game = Game::new(&my_chan.clone());
     s.identify().unwrap();
 
     let (tx, rx) = channel();
 
     let tx2 = tx.clone();
+    let tx3 = tx.clone();
 
     let _ = thread::spawn(move || {
         thread::sleep(Duration::new(10, 0));
@@ -88,7 +132,16 @@ fn main() {
                     send(my_chan, str2, s.clone());
                 }
             }
-            _ => (),
+            _ => {
+                // Here we must process the game event. Game::process does the
+                // relevant mutations, but we also require a function to send
+                // the messages to the IRC server here.
+                my_game = my_game.process(event.clone());
+                for i in my_game.pending.iter() {
+                    deliver(i, &tx3);
+                }
+                my_game = my_game.clean_up();
+            }
         }
     }
 

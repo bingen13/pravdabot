@@ -186,6 +186,20 @@ impl GameMessage {
     }
 }
 
+/// A game event.
+#[derive(Clone)]
+pub enum GameEvent {
+    Join(String),
+    Leave(String),
+    Msg(String),
+    Night(u8, u8),
+    Day(u8, u8),
+    Quit,
+    None,
+    Notice(String, String),
+    Begin,
+}
+
 /// A game event and the messages it generates.
 pub struct GameReaction {
     pub event: GameEvent,
@@ -235,11 +249,23 @@ impl Game {
         println!("To be done. Game starting..."); // TODO
     }
 
+    /// Place pending reactions into log.
+    pub fn clean_up(mut self: Game) -> Game {
+        if self.pending.len() > 0 {
+            {
+                let m = &mut self.pending;
+                self.log.append(m);
+            }
+            self.pending = Vec::new();
+        }
+        return self;
+    }
+
     pub fn process(self, event: GameEvent) -> Game {
         match event {
             GameEvent::Join(_) => process_join(self, event),
             _ => {
-                println!("Unimplemented!");
+                println!("Unimplemented event!");
                 self
             }
         }
@@ -247,14 +273,14 @@ impl Game {
 }
 
 /// Process joins.
-pub fn process_join(mut g: Game, e: GameEvent) -> Game {
+fn process_join(mut g: Game, e: GameEvent) -> Game {
+    let mut gr = GameReaction::new(&e);
     if let GameEvent::Join(ref nick) = e {
         let nick = nick.clone();
         match g.phase {
             Phase::Inactive => {
                 g.phase = Phase::Starting(10, 10);
                 g.players = Participants::Joiners(vec![nick.clone()]);
-                let mut gr = GameReaction::new(&e);
                 let gm = GameMessage::public(g.channel.clone(),
                                              format!("{} starting new game!", nick));
                 gr = gr.add(gm);
@@ -264,43 +290,26 @@ pub fn process_join(mut g: Game, e: GameEvent) -> Game {
             Phase::Starting(_, _) => {
                 if let Participants::Joiners(ref mut p) = g.players {
                     if !p.contains(&nick) {
+                        let gm = GameMessage::public(g.channel.clone(),
+                                                     format!("{} joins the game.", nick));
                         p.push(nick);
+                        gr = gr.add(gm);
+                        g.pending.push(gr);
+                    } else {
+                        let gm = GameMessage::public(g.channel.clone(),
+                                                     format!("{} already joined.", nick));
+                        gr = gr.add(gm);
+                        g.pending.push(gr);
                     }
                 }
                 g
             }
             _ => {
-                println!("Unimplemented!");
+                println!("Unimplemented phase for join!");
                 g
             }
         }
     } else {
         g
     }
-}
-
-/// Place pending reactions into log.
-pub fn clean_up(mut g: Game) -> Game {
-    if g.pending.len() > 0 {
-        {
-            let m = &mut g.pending;
-            g.log.append(m);
-        }
-        g.pending = Vec::new();
-    }
-    return g;
-}
-
-/// A game event.
-#[derive(Clone)]
-pub enum GameEvent {
-    Join(String),
-    Leave(String),
-    Msg(String),
-    Night(u8, u8),
-    Day(u8, u8),
-    Quit,
-    None,
-    Notice(String, String),
-    Begin,
 }

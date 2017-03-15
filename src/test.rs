@@ -56,12 +56,12 @@ fn test_two_joins() {
 /// Test an attempt to join twice with the same nick.
 #[test]
 fn test_join_twice() {
-    let g = Game::new(&"#test_channel".to_string());
+    let mut g = Game::new(&"#test_channel".to_string());
     let e = GameEvent::Join("test_nick".to_string());
     let e2 = GameEvent::Join("test_nick".to_string());
-    let g2 = g.process(e);
-    let g3 = g2.process(e2);
-    assert!(match g3.players {
+    g = g.process(e);
+    g = g.process(e2);
+    assert!(match g.players {
         Participants::Players(_) => false,
         Participants::Joiners(v) => v.len() == 1 && v[0] == "test_nick",
     });
