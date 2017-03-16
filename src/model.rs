@@ -264,6 +264,7 @@ impl Game {
     pub fn process(self, event: GameEvent) -> Game {
         match event {
             GameEvent::Join(_) => process_join(self, event),
+            GameEvent::Leave(_) => process_leave(self, event),
             _ => {
                 println!("Unimplemented event!");
                 self
@@ -306,6 +307,45 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
             }
             _ => {
                 println!("Unimplemented phase for join!");
+                g
+            }
+        }
+    } else {
+        g
+    }
+}
+
+fn process_leave(mut g: Game, e: GameEvent) -> Game {
+    let mut gr = GameReaction::new(&e);
+    if let GameEvent::Leave(ref nick) = e {
+        let nick = nick.clone();
+        match g.phase {
+            Phase::Starting(_, _) => {
+                if let Participants::Joiners(ref mut p) = g.players {
+                    if !p.contains(&nick) {
+                        let gm = GameMessage::public(g.channel.clone(),
+                                                     format!("{} hasn't joined yet.", nick));
+                        gr = gr.add(gm);
+                    } else {
+                        let index = p.iter().position(|it| it == &nick).unwrap();
+                        p.remove(index);
+                        let gm = GameMessage::public(g.channel.clone(),
+                                                     format!("{} has left the game.", nick));
+                        gr = gr.add(gm);
+                        if p.len() == 0 {
+                            g.phase = Phase::Inactive;
+                            let gm = GameMessage::public(g.channel.clone(),
+                                                         "No players left. Game cancelled."
+                                                             .to_string());
+                            gr = gr.add(gm);
+                        }
+                    }
+                    g.pending.push(gr);
+                }
+                g
+            }
+            _ => {
+                println!("Leave event unimplementted for this phase.");
                 g
             }
         }
