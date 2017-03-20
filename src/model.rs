@@ -129,20 +129,6 @@ impl Player {
         };
         return result;
     }
-
-    fn kill(&mut self) -> &Player {
-        assert!(self.alive == true);
-        self.alive = false;
-        return self;
-    }
-
-    fn is_alive(&self) -> bool {
-        return self.alive;
-    }
-
-    fn is_day_voter(&self) -> bool {
-        return self.alive && self.day_voter;
-    }
 }
 
 /// Phases of play.
@@ -207,6 +193,7 @@ pub struct GameReaction {
 }
 
 impl GameReaction {
+    /// Create a GameReaction out of an event.
     fn new(e: &GameEvent) -> GameReaction {
         let gr = GameReaction {
             event: e.clone(),
@@ -215,6 +202,7 @@ impl GameReaction {
         return gr;
     }
 
+    /// Add a message to an existing reaction.
     fn add(mut self, msg: GameMessage) -> GameReaction {
         self.msg.push(msg);
         return self;
@@ -233,6 +221,7 @@ pub struct Game {
 }
 
 impl Game {
+    /// Create game bound to a channel string.
     pub fn new(ch: &String) -> Game {
         let s = Game {
             gun: Gun::Loaded,
@@ -261,6 +250,7 @@ impl Game {
         return self;
     }
 
+    /// Process an event and return the new state of the game.
     pub fn process(self, event: GameEvent) -> Game {
         match event {
             GameEvent::Join(_) => process_join(self, event),
@@ -306,7 +296,11 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
                 g
             }
             _ => {
-                println!("Unimplemented phase for join!");
+                let gm = GameMessage::public(g.channel.clone(),
+                                             "A game is in place. Wait until it's over."
+                                                 .to_string());
+                gr = gr.add(gm);
+                g.pending.push(gr);
                 g
             }
         }
