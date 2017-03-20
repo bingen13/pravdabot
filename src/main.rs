@@ -96,11 +96,14 @@ fn main() {
     let tx2 = tx.clone();
     let tx3 = tx.clone();
 
+    // This thread ticks every second.
     let _ = thread::spawn(move || {
-        thread::sleep(Duration::new(10, 0));
-        tx.send(GameEvent::None).unwrap();
-        thread::sleep(Duration::new(300, 0));
-        tx.send(GameEvent::Quit).unwrap();
+        // Give the game time to connect.
+        thread::sleep(Duration::new(30, 0));
+        loop {
+            thread::sleep(Duration::new(1, 0));
+            tx.send(GameEvent::Tick).unwrap();
+        }
     });
 
     let s2 = my_server.clone();

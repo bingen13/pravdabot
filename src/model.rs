@@ -136,7 +136,7 @@ pub enum Phase {
     Day(u8),
     Night(u8),
     Inactive,
-    Starting(u8, u8),
+    Starting(u8),
 }
 
 // The game.
@@ -181,7 +181,7 @@ pub enum GameEvent {
     Night(u8, u8),
     Day(u8, u8),
     Quit,
-    None,
+    Tick,
     Notice(String, String),
     Begin,
 }
@@ -218,6 +218,7 @@ pub struct Game {
     pub channel: String,
     pub log: Vec<GameReaction>,
     pub pending: Vec<GameReaction>,
+    pub ticks: u8,
 }
 
 impl Game {
@@ -230,6 +231,7 @@ impl Game {
             phase: Phase::Inactive,
             log: Vec::new(),
             pending: Vec::new(),
+            ticks: 5,
         };
         return s;
     }
@@ -253,6 +255,7 @@ impl Game {
     /// Process an event and return the new state of the game.
     pub fn process(self, event: GameEvent) -> Game {
         match event {
+            GameEvent::Tick => process_tick(self),
             GameEvent::Join(_) => process_join(self, event),
             GameEvent::Leave(_) => process_leave(self, event),
             _ => {
@@ -261,16 +264,22 @@ impl Game {
             }
         }
     }
+
+    // Process phase change in the game. Stub! TODO!
+    fn process_phase(self: &mut Game) -> &Game {
+        // Stub it as the identity function.
+        return self;
+    }
 }
 
-/// Process joins.
+/// Process join events.
 fn process_join(mut g: Game, e: GameEvent) -> Game {
     let mut gr = GameReaction::new(&e);
     if let GameEvent::Join(ref nick) = e {
         let nick = nick.clone();
         match g.phase {
             Phase::Inactive => {
-                g.phase = Phase::Starting(10, 10);
+                g.phase = Phase::Starting(10);
                 g.players = Participants::Joiners(vec![nick.clone()]);
                 let gm = GameMessage::public(g.channel.clone(),
                                              format!("{} starting new game!", nick));
@@ -278,7 +287,7 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
                 g.pending.push(gr);
                 g
             }
-            Phase::Starting(_, _) => {
+            Phase::Starting(_) => {
                 if let Participants::Joiners(ref mut p) = g.players {
                     if !p.contains(&nick) {
                         let gm = GameMessage::public(g.channel.clone(),
@@ -309,12 +318,13 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
     }
 }
 
+/// Process leave events.
 fn process_leave(mut g: Game, e: GameEvent) -> Game {
     let mut gr = GameReaction::new(&e);
     if let GameEvent::Leave(ref nick) = e {
         let nick = nick.clone();
         match g.phase {
-            Phase::Starting(_, _) => {
+            Phase::Starting(_) => {
                 if let Participants::Joiners(ref mut p) = g.players {
                     if !p.contains(&nick) {
                         let gm = GameMessage::public(g.channel.clone(),
@@ -346,4 +356,39 @@ fn process_leave(mut g: Game, e: GameEvent) -> Game {
     } else {
         g
     }
+}
+
+/// Process ticks.
+fn process_tick(mut g: Game) -> Game {
+    let mut phase_over = false;
+    match g.phase {
+        // When game is inactive, do nothing.
+        Phase::Inactive => (),
+        // When game is starting...
+        Phase::Starting(ref mut s) => {
+            // If there are ticks left.
+            if g.ticks > 0 {
+                // Remove one.
+                g.ticks -= 1;
+                // No ticks left:
+            } else {
+                // Reset tick counter no matter what.
+                g.ticks = 5;
+                // If phase counter is not yet finished:
+                if *s > 0 {
+                    // Reduce it by one.
+                    *s -= 1;
+                } else {
+                    // Phase counter is done, so we set the flag.
+                    phase_over = true;
+                }
+            }
+        }
+        // Residual (FIX!)
+        _ => (),
+    }
+    if phase_over {
+        g.process_phase();
+    }
+    g
 }
