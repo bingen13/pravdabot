@@ -99,7 +99,7 @@ fn main() {
     // This thread ticks every second.
     let _ = thread::spawn(move || {
         // Give the game time to connect.
-        thread::sleep(Duration::new(30, 0));
+        thread::sleep(Duration::new(20, 0));
         loop {
             thread::sleep(Duration::new(1, 0));
             tx.send(GameEvent::Tick).unwrap();
@@ -120,7 +120,6 @@ fn main() {
 
     loop {
         let event = rx.recv().unwrap();
-        println!("Got event!");
         match event {
             GameEvent::Quit => {
                 println!("Quit event received! Quitting...");

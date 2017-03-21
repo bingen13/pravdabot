@@ -2,6 +2,10 @@
 //! This module contains the game model: data structures and functions
 //! to handle them more or less independently of the communication and control parts.
 
+/// Maximum number of ticks on the counter:
+const MAX_TICKS: u8 = 8;
+
+
 /// Roles for the game.
 pub enum Role {
     Worker,
@@ -231,7 +235,7 @@ impl Game {
             phase: Phase::Inactive,
             log: Vec::new(),
             pending: Vec::new(),
-            ticks: 5,
+            ticks: MAX_TICKS,
         };
         return s;
     }
@@ -267,9 +271,27 @@ impl Game {
 
     // Process phase change in the game.
     fn process_phase(self: &mut Game) -> &Game {
-        // Stub it as the identity function.
-        // In future this will match on the relevant phases as Starting(0) etc.
-        return self;
+        match self.phase {
+            // If we're on inactive phase, do nothing.
+            Phase::Inactive => self,
+            // If Starting hase is over:
+            Phase::Starting(0) => {
+                println!("Cannot start, not enough players, also not written.");
+                self.phase = Phase::Inactive;
+                self.log = Vec::new();
+                self.players = Participants::Joiners(Vec::new());
+                self.ticks = MAX_TICKS;
+                self
+            }
+            Phase::Starting(i) => {
+                if self.ticks == 0 {
+                    self.phase = Phase::Starting(i - 1);
+                }
+                self
+            }
+            // If we don't match anything else:
+            _ => self,
+        }
     }
 }
 
@@ -280,7 +302,7 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
         let nick = nick.clone();
         match g.phase {
             Phase::Inactive => {
-                g.phase = Phase::Starting(10);
+                g.phase = Phase::Starting(6);
                 g.players = Participants::Joiners(vec![nick.clone()]);
                 let gm = GameMessage::public(g.channel.clone(),
                                              format!("{} starting new game!", nick));
@@ -361,20 +383,21 @@ fn process_leave(mut g: Game, e: GameEvent) -> Game {
 
 /// Process ticks.
 fn process_tick(mut g: Game) -> Game {
+    // println!("Ticks: {}", &g.ticks);
     match g.phase {
         // When game is inactive, do nothing.
         Phase::Inactive => (),
         // When game is starting...
-        Phase::Starting(ref mut s) => {
+        Phase::Starting(s) => {
+            // println!("Phase: {}, ticks: {}", s, &g.ticks);
             // If there are ticks left.
             if g.ticks > 0 {
                 // Remove one.
                 g.ticks -= 1;
                 // No ticks left:
             } else {
-                // Reset tick and decrement phase counter.
-                g.ticks = 5;
-                *s -= 1;
+                // Reset tick.
+                g.ticks = MAX_TICKS;
             }
         }
         // Residual (FIX!)
