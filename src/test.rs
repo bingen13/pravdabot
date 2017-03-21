@@ -26,7 +26,7 @@ fn test_join_event() {
         Participants::Joiners(ref v) => v.len() == 1 && v[0] == "test_nick",
     });
     assert!(match g2.phase {
-        Phase::Starting(_, _) => true,
+        Phase::Starting(_) => true,
         _ => false,
     });
 }
@@ -40,7 +40,7 @@ fn test_two_joins() {
     let g2 = g.process(e1);
     let g3 = g2.process(e2);
     assert!(match g3.phase {
-        Phase::Starting(_, _) => true,
+        Phase::Starting(_) => true,
         _ => false,
     });
     match g3.players {
@@ -106,7 +106,7 @@ fn test_two_joins_two_leaves() {
     // Assertions:
     // After two joins and one leave, we're on Starting phase.
     assert!(match g.phase {
-        Phase::Starting(_, _) => true,
+        Phase::Starting(_) => true,
         _ => false,
     });
     // And there's one player.

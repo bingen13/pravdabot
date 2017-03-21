@@ -265,9 +265,10 @@ impl Game {
         }
     }
 
-    // Process phase change in the game. Stub! TODO!
+    // Process phase change in the game.
     fn process_phase(self: &mut Game) -> &Game {
         // Stub it as the identity function.
+        // In future this will match on the relevant phases as Starting(0) etc.
         return self;
     }
 }
@@ -360,7 +361,6 @@ fn process_leave(mut g: Game, e: GameEvent) -> Game {
 
 /// Process ticks.
 fn process_tick(mut g: Game) -> Game {
-    let mut phase_over = false;
     match g.phase {
         // When game is inactive, do nothing.
         Phase::Inactive => (),
@@ -372,23 +372,14 @@ fn process_tick(mut g: Game) -> Game {
                 g.ticks -= 1;
                 // No ticks left:
             } else {
-                // Reset tick counter no matter what.
+                // Reset tick and decrement phase counter.
                 g.ticks = 5;
-                // If phase counter is not yet finished:
-                if *s > 0 {
-                    // Reduce it by one.
-                    *s -= 1;
-                } else {
-                    // Phase counter is done, so we set the flag.
-                    phase_over = true;
-                }
+                *s -= 1;
             }
         }
         // Residual (FIX!)
         _ => (),
     }
-    if phase_over {
-        g.process_phase();
-    }
+    g.process_phase();
     g
 }
