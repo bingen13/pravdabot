@@ -207,7 +207,7 @@ impl GameReaction {
     }
 
     /// Add a message to an existing reaction.
-    fn add(mut self, msg: GameMessage) -> GameReaction {
+    fn add(&mut self, msg: GameMessage) -> &GameReaction {
         self.msg.push(msg);
         return self;
     }
@@ -306,7 +306,7 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
                 g.players = Participants::Joiners(vec![nick.clone()]);
                 let gm = GameMessage::public(g.channel.clone(),
                                              format!("{} starting new game!", nick));
-                gr = gr.add(gm);
+                gr.add(gm);
                 g.pending.push(gr);
                 g
             }
@@ -316,12 +316,12 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
                         let gm = GameMessage::public(g.channel.clone(),
                                                      format!("{} joins the game.", nick));
                         p.push(nick);
-                        gr = gr.add(gm);
+                        gr.add(gm);
                         g.pending.push(gr);
                     } else {
                         let gm = GameMessage::public(g.channel.clone(),
                                                      format!("{} already joined.", nick));
-                        gr = gr.add(gm);
+                        gr.add(gm);
                         g.pending.push(gr);
                     }
                 }
@@ -331,7 +331,7 @@ fn process_join(mut g: Game, e: GameEvent) -> Game {
                 let gm = GameMessage::public(g.channel.clone(),
                                              "A game is in place. Wait until it's over."
                                                  .to_string());
-                gr = gr.add(gm);
+                gr.add(gm);
                 g.pending.push(gr);
                 g
             }
@@ -352,19 +352,19 @@ fn process_leave(mut g: Game, e: GameEvent) -> Game {
                     if !p.contains(&nick) {
                         let gm = GameMessage::public(g.channel.clone(),
                                                      format!("{} hasn't joined yet.", nick));
-                        gr = gr.add(gm);
+                        gr.add(gm);
                     } else {
                         let index = p.iter().position(|it| it == &nick).unwrap();
                         p.remove(index);
                         let gm = GameMessage::public(g.channel.clone(),
                                                      format!("{} has left the game.", nick));
-                        gr = gr.add(gm);
+                        gr.add(gm);
                         if p.len() == 0 {
                             g.phase = Phase::Inactive;
                             let gm = GameMessage::public(g.channel.clone(),
                                                          "No players left. Game cancelled."
                                                              .to_string());
-                            gr = gr.add(gm);
+                            gr.add(gm);
                         }
                     }
                     g.pending.push(gr);
