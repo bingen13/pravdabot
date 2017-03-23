@@ -6,13 +6,13 @@ fn test_new_game() {
     let g = Game::new(&"#test_channel".to_string());
     assert!(g.channel == "#test_channel");
     assert!(match g.gun {
-        Gun::Loaded => true,
-        _ => false,
-    });
+                Gun::Loaded => true,
+                _ => false,
+            });
     assert!(match g.phase {
-        Phase::Inactive => true,
-        _ => false,
-    });
+                Phase::Inactive => true,
+                _ => false,
+            });
 }
 
 /// Test a Join event on an inactive game.
@@ -22,13 +22,13 @@ fn test_join_event() {
     let e = GameEvent::Join("test_nick".to_string());
     let g2 = g.process(e);
     assert!(match g2.players {
-        Participants::Players(_) => false,
-        Participants::Joiners(ref v) => v.len() == 1 && v[0] == "test_nick",
-    });
+                Participants::Players(_) => false,
+                Participants::Joiners(ref v) => v.len() == 1 && v[0] == "test_nick",
+            });
     assert!(match g2.phase {
-        Phase::Starting(_) => true,
-        _ => false,
-    });
+                Phase::Starting(_) => true,
+                _ => false,
+            });
 }
 
 /// Test two join events.
@@ -40,9 +40,9 @@ fn test_two_joins() {
     let g2 = g.process(e1);
     let g3 = g2.process(e2);
     assert!(match g3.phase {
-        Phase::Starting(_) => true,
-        _ => false,
-    });
+                Phase::Starting(_) => true,
+                _ => false,
+            });
     match g3.players {
         Participants::Players(_) => assert!(false),
         Participants::Joiners(ref v) => {
@@ -62,9 +62,9 @@ fn test_join_twice() {
     g = g.process(e);
     g = g.process(e2);
     assert!(match g.players {
-        Participants::Players(_) => false,
-        Participants::Joiners(ref v) => v.len() == 1 && v[0] == "test_nick",
-    });
+                Participants::Players(_) => false,
+                Participants::Joiners(ref v) => v.len() == 1 && v[0] == "test_nick",
+            });
 }
 
 /// Test of the leave event. Join single player and leave.
@@ -80,14 +80,14 @@ fn test_leave() {
     // Assertions:
     // When the only player of a game that is starting quits, the game goes inactive.
     assert!(match g.phase {
-        Phase::Inactive => true,
-        _ => false,
-    });
+                Phase::Inactive => true,
+                _ => false,
+            });
     // And the player list is empty.
     assert!(match g.players {
-        Participants::Players(_) => false,
-        Participants::Joiners(ref v) => v.len() == 0,
-    });
+                Participants::Players(_) => false,
+                Participants::Joiners(ref v) => v.len() == 0,
+            });
 }
 
 #[test]
@@ -106,24 +106,24 @@ fn test_two_joins_two_leaves() {
     // Assertions:
     // After two joins and one leave, we're on Starting phase.
     assert!(match g.phase {
-        Phase::Starting(_) => true,
-        _ => false,
-    });
+                Phase::Starting(_) => true,
+                _ => false,
+            });
     // And there's one player.
     assert!(match g.players {
-        Participants::Players(_) => false,
-        Participants::Joiners(ref v) => v.len() == 1,
-    });
+                Participants::Players(_) => false,
+                Participants::Joiners(ref v) => v.len() == 1,
+            });
     // Now we process the last leave event.
     g = g.process(e4);
     // Assertions:
     // Back to the Starting condition with no players.
     assert!(match g.phase {
-        Phase::Inactive => true,
-        _ => false,
-    });
+                Phase::Inactive => true,
+                _ => false,
+            });
     assert!(match g.players {
-        Participants::Players(_) => false,
-        Participants::Joiners(ref v) => v.len() == 0,
-    });
+                Participants::Players(_) => false,
+                Participants::Joiners(ref v) => v.len() == 0,
+            });
 }

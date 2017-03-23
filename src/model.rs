@@ -59,13 +59,8 @@ impl Player {
             },
             turn_actions: 1,
             game_actions: match r {
-                Role::Cosmopolitan |
-                Role::Mastermind |
-                Role::Spy |
-                Role::Worker |
-                Role::Saboteur |
-                Role::Commissar |
-                Role::Militya => 0,
+                Role::Cosmopolitan | Role::Mastermind | Role::Spy | Role::Worker |
+                Role::Saboteur | Role::Commissar | Role::Militya => 0,
                 Role::Chekist => 8,
                 Role::Stalin => 1,
             },
@@ -118,19 +113,19 @@ impl Player {
                           self.turn_actions);
         result = result +
                  match self.alive {
-            true => "You are still alive. ",
-            false => "You are no longer alive. ",
-        };
+                     true => "You are still alive. ",
+                     false => "You are no longer alive. ",
+                 };
         result = result +
                  match self.day_voter {
-            true => "You are a full voting member of the Soviet. ",
-            false => "You have lost their voting rights at the Soviet. ",
-        };
+                     true => "You are a full voting member of the Soviet. ",
+                     false => "You have lost their voting rights at the Soviet. ",
+                 };
         result = result +
                  match self.night_voter {
-            true => "You are busy at night.",
-            false => "You sleep at night.",
-        };
+                     true => "You are busy at night.",
+                     false => "You sleep at night.",
+                 };
         return result;
     }
 }

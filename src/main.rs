@@ -40,16 +40,18 @@ pub fn process_cmd(msg: Message, tx: &Sender<GameEvent>) {
                             tx.send(GameEvent::Join(nick.to_string())).unwrap();
                         } else {
                             tx.send(GameEvent::Notice(nick.to_string(),
-                                                      "This command must be issued in public."
-                                                          .to_string()))
-                              .unwrap();
+                                                        "This command must be issued in public."
+                                                            .to_string()))
+                                .unwrap();
                         }
                     }
                     _ => println!("Unimplemented command: {}", cmd_words[0]),
                 }
             }
         }
-        Command::NICK(_) | Command::QUIT(_) | Command::PART(_, _) => {
+        Command::NICK(_) |
+        Command::QUIT(_) |
+        Command::PART(_, _) => {
             let nick = msg.source_nickname().unwrap();
             tx.send(GameEvent::Leave(nick.to_string())).unwrap();
         }
@@ -59,8 +61,8 @@ pub fn process_cmd(msg: Message, tx: &Sender<GameEvent>) {
     if mstr.contains("exitnow") {
         println!("Received Quit command, sending IRC quit event.");
         tx.send(GameEvent::Notice("".to_string(),
-                                  "Owner asked me to quit, do vstrechi!".to_string()))
-          .unwrap();
+                                    "Owner asked me to quit, do vstrechi!".to_string()))
+            .unwrap();
         tx.send(GameEvent::Quit).unwrap()
     }
 }
@@ -87,7 +89,11 @@ fn main() {
     println!("Welcome to CCCP. Building datastructures...");
     let my_server = IrcServer::new("pravda.json").unwrap();
     let s = my_server.clone();
-    let my_chan = &my_server.config().clone().channels.unwrap()[0];
+    let my_chan = &my_server.config()
+                       .clone()
+                       .channels
+                       .unwrap()
+                       [0];
     let mut my_game = Game::new(&my_chan.clone());
     s.identify().unwrap();
 
@@ -108,14 +114,12 @@ fn main() {
 
     let s2 = my_server.clone();
 
-    let _ = thread::spawn(move || {
-        for msg in s2.iter() {
-            match msg {
-                Ok(m_r) => process_cmd(m_r, &tx2),
-                _ => break,
-            }
-        }
-    });
+    let _ = thread::spawn(move || for msg in s2.iter() {
+                              match msg {
+                                  Ok(m_r) => process_cmd(m_r, &tx2),
+                                  _ => break,
+                              }
+                          });
 
 
     loop {
