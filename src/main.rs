@@ -72,11 +72,13 @@ fn deliver(gr: &GameReaction, tx: &Sender<GameEvent>) {
     for i in gr.msg.iter() {
         match i.recipients {
             Recipients::Channel(ref s) => {
-                tx.send(GameEvent::Notice(s.clone(), i.content.clone())).unwrap();
+                tx.send(GameEvent::Notice(s.clone(), i.content.clone()))
+                    .unwrap();
             }
             Recipients::Nicks(ref v) => {
                 for j in v.iter() {
-                    tx.send(GameEvent::Notice(j.clone(), i.content.clone())).unwrap();
+                    tx.send(GameEvent::Notice(j.clone(), i.content.clone()))
+                        .unwrap();
                 }
             }
         }
@@ -89,11 +91,7 @@ fn main() {
     println!("Welcome to CCCP. Building datastructures...");
     let my_server = IrcServer::new("pravda.json").unwrap();
     let s = my_server.clone();
-    let my_chan = &my_server.config()
-                       .clone()
-                       .channels
-                       .unwrap()
-                       [0];
+    let my_chan = &my_server.config().clone().channels.unwrap()[0];
     let mut my_game = Game::new(&my_chan.clone());
     s.identify().unwrap();
 
@@ -104,13 +102,13 @@ fn main() {
 
     // This thread ticks every second.
     let _ = thread::spawn(move || {
-        // Give the game time to connect.
-        thread::sleep(Duration::new(20, 0));
-        loop {
-            thread::sleep(Duration::new(1, 0));
-            tx.send(GameEvent::Tick).unwrap();
-        }
-    });
+                              // Give the game time to connect.
+                              thread::sleep(Duration::new(20, 0));
+                              loop {
+                                  thread::sleep(Duration::new(1, 0));
+                                  tx.send(GameEvent::Tick).unwrap();
+                              }
+                          });
 
     let s2 = my_server.clone();
 
